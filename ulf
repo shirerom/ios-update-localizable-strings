@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 # The MIT License (MIT)
 #
@@ -34,6 +34,9 @@ my %stats;
 # existing phrases in language file ($langFile)
 my %lang;
 
+# Pattern for matching the translation key
+my $keyPattern = qr/^\"(.+)\" =/;
+
 # Command line
 my ($langFile, $baseFile, $outFile) = @ARGV;
 
@@ -55,7 +58,7 @@ while (<IN_LANG>) {
 		# if a line is a comment => the next line is a translation
 		my $translation = <IN_LANG>;
 
-		if ($translation =~ m/^(\".+\") =/) {
+		if ($translation =~ $keyPattern) {
 
 			# save comment + translation using the key of the translation
 			$lang{$1} = "$comment$translation\n";
@@ -83,7 +86,7 @@ while (<IN_BASE>) {
 		my $comment = $_;
 		my $translation = <IN_BASE>;
 
-		if ($translation =~ m/^(\".+\") =/) {
+		if ($translation =~ $keyPattern) {
 
 			# if the translation already exists in the language file then keep it
 			# unless use comment + translation of the base file
@@ -103,7 +106,7 @@ close IN_BASE;
 if ($outFile) {
 
 	open OUT_FILE, "> :encoding(UTF-16)", $outFile
-	or die "$outFile won't open: $!\n";
+		or die "$outFile won't open: $!\n";
 
 	print OUT_FILE $result;
 
@@ -133,6 +136,3 @@ sub usage {
 	print "usage: $split[-1] <lang_file> <base_file> [<out_file>]\n\n";
 	exit;
 }
-
-
-
