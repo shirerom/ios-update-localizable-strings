@@ -1,7 +1,18 @@
 ULF
 ===
 
-ULF stands for "Update Localizable Strings" and it is a Perl Script for merging new translation phrases from one .strings file to another.
+ULF stands for "Update Localizable Strings" and it is a Perl Script for merging
+new translation phrases from one .strings file to another.
+
+What does it do?
+---
+
+The script reads both, the language file and the base file, into associative
+arrays using the translation key as identifier for a translation. Then it
+prints all translations of base file, but if the translation exists in the
+langague file the language file version of the translation is printed.
+Therefore existing translations stay unchanged. This algorythm removes needless
+translations.
 
 Usage
 ---
