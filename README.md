@@ -1,3 +1,7 @@
+# !!!OBSOLETE!!!
+
+use https://github.com/shirerom/xcode-continuous-localization-suit instead
+
 # ULF
 
 ULF stands for "Update Localizable Strings" and it is a Perl Script for merging
