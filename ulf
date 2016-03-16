@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014 Johannes Bauer
+# Copyright (c) 2014-2016 Johannes Bauer
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,9 @@ usage() if $#ARGV < 1;
 
 # Stats
 my %stats;
+$stats{"langPhrases"} = 0;
+$stats{"skipPhrases"} = 0;
+$stats{"basePhrases"} = 0;
 
 # existing phrases in language file ($langFile)
 my %lang;
@@ -37,15 +40,38 @@ my %lang;
 # Pattern for matching the translation key
 my $keyPattern = qr/^\"(.+)\" =/;
 
+# Pattern for skipping placeholder translations
+# Every translation value embraced in angle braces is placeholder
+# for dynamic values.
+# e.g. "Kle-oF-pIz.text" = "<Label>";
+my $skipValuePattern = qr/= \"(<.+>)\";$/;
+
+# Default file encoding
+my $defaultEncoding = "utf-16";
+
 # Command line
 my ($langFile, $baseFile, $outFile) = @ARGV;
+
+#
+# File encoding
+#
+
+my $langFileEncoding = `fileencoding $langFile`;
+
+# removing BE or LE suffix of uft-16 encoding, which causes
+# problems while reading or writing the file
+if (substr($langFileEncoding, 0, 6) eq "utf-16") {
+	$langFileEncoding = "utf-16";
+}
+
+print STDERR "Encoding of $langFile is $langFileEncoding\n";
 
 
 #
 # Language file (in)
 #
 
-open IN_LANG, "< :encoding(UTF-16)", $langFile
+open IN_LANG, "< :encoding($langFileEncoding)", $langFile
 	or die "$langFile won't open: $!\n";
 
 while (<IN_LANG>) {
@@ -76,7 +102,7 @@ close IN_LANG;
 
 my $result;
 
-open IN_BASE, "< :encoding(UTF-16)", $baseFile
+open IN_BASE, "< :encoding($defaultEncoding)", $baseFile
 	or die "$baseFile won't open $!\n";
 
 while (<IN_BASE>) {
@@ -88,11 +114,22 @@ while (<IN_BASE>) {
 
 		if ($translation =~ $keyPattern) {
 
-			# if the translation already exists in the language file then keep it
-			# unless use comment + translation of the base file
-			$result .= $lang{$1} ? $lang{$1} : "$comment$translation\n";
+			my $key = $1;
 
-			$stats{"basePhrases"}++;
+			# Translations embraced in angle braces will be ignored, because they
+			# are used as placeholders
+			if ($translation =~ $skipValuePattern) {
+				$stats{"skipPhrases"}++;
+			}
+
+			else {
+
+				# if the translation already exists in the language file then keep it
+				# unless use comment + translation of the base file
+				$result .= $lang{$1} ? $lang{$1} : "$comment$translation\n";
+
+				$stats{"basePhrases"}++;
+			}
 		}
 	}
 }
@@ -105,7 +142,7 @@ close IN_BASE;
 
 if ($outFile) {
 
-	open OUT_FILE, "> :encoding(UTF-16)", $outFile
+	open OUT_FILE, "> :encoding($defaultEncoding)", $outFile
 		or die "$outFile won't open: $!\n";
 
 	print OUT_FILE $result;
@@ -121,7 +158,7 @@ else {
 # Stats
 #
 
-print STDERR "Result: $stats{'basePhrases'} base phrases, $stats{'langPhrases'} language phrases\n\n";
+print STDERR "Result: $stats{'basePhrases'} base phrases, $stats{'langPhrases'} language phrases, $stats{'skipPhrases'} phrases skipped\n\n";
 
 exit;
 
@@ -136,3 +173,4 @@ sub usage {
 	print "usage: $split[-1] <lang_file> <base_file> [<out_file>]\n\n";
 	exit;
 }
+
